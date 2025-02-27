@@ -150,59 +150,67 @@ def get_growth_ratio(stock_code: str):
     params = {"fid_cond_mrkt_div_code": "J", "fid_input_iscd": stock_code, "fid_div_cls_code": "1"}
     return fetch_api(url, "FHKST66430800", params=params)
 
-# 📌 10️⃣ 해외 주식 현재가 상세 조회
-@app.get("/overseas/price-detail/{exchange}/{symbol}")
-def get_overseas_stock_price(exchange: str, symbol: str):
-    url = f"https://openapi.koreainvestment.com:9443/uapi/overseas-price/v1/quotations/price-detail"
+@app.get("/overseas/price-detail")
+def get_overseas_price_detail(
+    # 문서상 Query Parameter
+    AUTH: str = "",       # 사용자권한정보(일반적으로 헤더로 쓰이지만 문서상 필수)
+    EXCD: str = "",       # 거래소코드 (NYS, NAS, AMS, TSE 등)
+    SYMB: str = "",       # 종목코드 (AAPL, TSLA 등)
+):
+    """
+    해외 실시간상세현재가 조회
+    - AUTH: 사용자권한정보(문서상 필수), 보통 헤더에 토큰 쓰지만 문서엔 Query Param
+    - EXCD: 거래소코드 (예: NAS, NYS, AMS 등)
+    - SYMB: 종목코드 (예: AAPL, TSLA 등)
+    """
+
+    url = "https://openapi.koreainvestment.com:9443/uapi/overseas-price/v1/quotations/price-detail"
+
+    # 모든 Query Param을 딕셔너리로 구성
     params = {
-        "AUTH": ACCESS_TOKEN,
-        "EXCD": exchange,
-        "SYMB": symbol
+        "AUTH": AUTH,
+        "EXCD": EXCD,
+        "SYMB": SYMB,
     }
+    
+    # 해외주식 현재가 상세 TR_ID: HHDFS76200200
     return fetch_api(url, "HHDFS76200200", params=params)
 
-# 📌 11️⃣ 해외 뉴스 조회
 @app.get("/overseas/news")
-def get_overseas_news():
+def get_overseas_news(
+    INFO_GB: str = "",       # 뉴스구분(전체=공백)
+    CLASS_CD: str = "",      # 중분류(전체=공백)
+    NATION_CD: str = "",     # 국가코드(전체=공백, CN, HK, US 등)
+    EXCHANGE_CD: str = "",   # 거래소코드(전체=공백)
+    SYMB: str = "",          # 종목코드(전체=공백)
+    DATA_DT: str = "",       # 조회일자(YYYYMMDD), 전체=공백
+    DATA_TM: str = "",       # 조회시간(HHMMSS), 전체=공백
+    CTS: str = "",           # 다음키(연속조회), 전체=공백
+):
+    """
+    해외뉴스종합(제목) 조회
+    - INFO_GB: 뉴스구분 (전체=공백)
+    - CLASS_CD: 중분류 (전체=공백)
+    - NATION_CD: 국가코드 (CN, HK, US 등)
+    - EXCHANGE_CD: 거래소코드
+    - SYMB: 종목코드
+    - DATA_DT: 조회일자(YYYYMMDD)
+    - DATA_TM: 조회시간(HHMMSS)
+    - CTS: 다음키(연속조회)
+    """
+
     url = "https://openapi.koreainvestment.com:9443/uapi/overseas-price/v1/quotations/news-title"
+
     params = {
-        "INFO_GB": "",
-        "CLASS_CD": "",
-        "NATION_CD": "",
-        "EXCHANGE_CD": "",
-        "SYMB": "",
-        "DATA_DT": "",
-        "DATA_TM": "",
-        "CTS": ""
+        "INFO_GB": INFO_GB,
+        "CLASS_CD": CLASS_CD,
+        "NATION_CD": NATION_CD,
+        "EXCHANGE_CD": EXCHANGE_CD,
+        "SYMB": SYMB,
+        "DATA_DT": DATA_DT,
+        "DATA_TM": DATA_TM,
+        "CTS": CTS
     }
+    
+    # 해외뉴스종합(제목) TR_ID: HHPSTH60100C1
     return fetch_api(url, "HHPSTH60100C1", params=params)
-
-# 📌 10️⃣ 해외 주식 현재가 상세 조회
-@app.get("/overseas/price-detail/{exchange}/{symbol}")
-def get_overseas_stock_price(exchange: str, symbol: str):
-    url = f"https://openapi.koreainvestment.com:9443/uapi/overseas-price/v1/quotations/price-detail"
-    params = {
-        "AUTH": ACCESS_TOKEN,
-        "EXCD": exchange,
-        "SYMB": symbol
-    }
-    return fetch_api(url, "HHDFS76200200", params=params)
-
-# 📌 11️⃣ 해외 뉴스 조회
-@app.get("/overseas/news")
-def get_overseas_news():
-    url = "https://openapi.koreainvestment.com:9443/uapi/overseas-price/v1/quotations/news-title"
-    params = {
-        "INFO_GB": "",
-        "CLASS_CD": "",
-        "NATION_CD": "",
-        "EXCHANGE_CD": "",
-        "SYMB": "",
-        "DATA_DT": "",
-        "DATA_TM": "",
-        "CTS": ""
-    }
-    return fetch_api(url, "HHPSTH60100C1", params=params)
-
-    return fetch_api(url, financial_types[data_type])
-
