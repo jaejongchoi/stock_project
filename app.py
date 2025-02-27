@@ -11,10 +11,10 @@ load_dotenv()
 # 📌 FastAPI 앱 생성
 app = FastAPI()
 
-# 📌 CORS 설정
+# 📌 CORS 설정 (모든 도메인 허용, 필요시 수정)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://yourdomain.com"],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -68,24 +68,45 @@ def fetch_api(url, tr_id, params=None):
         "appkey": APP_KEY,
         "appsecret": APP_SECRET,
         "tr_id": tr_id,
-        "custtype": "P"
+        "custtype": "P"  # 개인
     }
 
     try:
         response = requests.get(url, headers=headers, params=params)
+        raw_text = response.text  # 원본 JSON 텍스트
         response.raise_for_status()
-        return response.json()
-    except requests.RequestException as err:
-        return {"error": f"HTTP {response.status_code}", "message": str(err)}
 
-# 📌 4️⃣ 실시간 주가 조회
+        # 실제 JSON 데이터 파싱
+        data = response.json()
+
+        # 로깅 (콘솔에서 raw 데이터 확인 가능)
+        print(f"\n=== DEBUG RAW RESPONSE ({tr_id}) ===\n{raw_text}\n")
+
+        return data
+    except requests.RequestException as err:
+        # 에러 발생 시, 원본 응답도 반환
+        return {
+            "error": f"HTTP {response.status_code}",
+            "message": str(err),
+            "raw_response": response.text
+        }
+
+# 📌 루트 엔드포인트 ("/")
+@app.get("/")
+def root():
+    """
+    루트 엔드포인트 - 404 방지용
+    """
+    return {"message": "Hello from FastAPI Root!"}
+
+# 📌 4️⃣ 실시간 주가 조회 (국내)
 @app.get("/stock/{stock_code}")
 def get_realtime_price(stock_code: str):
     url = "https://openapi.koreainvestment.com:9443/uapi/domestic-stock/v1/quotations/inquire-price"
     params = {"fid_cond_mrkt_div_code": "J", "fid_input_iscd": stock_code}
     return fetch_api(url, "FHKST01010100", params=params)
 
-# 📌 5️⃣ 종합시황/공시 조회
+# 📌 종합시황/공시 조회
 @app.get("/market-news")
 def get_market_news():
     url = "https://openapi.koreainvestment.com:9443/uapi/domestic-stock/v1/quotations/news-title"
@@ -101,106 +122,89 @@ def get_market_news():
     }
     return fetch_api(url, "FHKST01011800", params=params)
 
-# 📌 4️⃣ 대차대조표 조회
+# 📌 대차대조표 조회
 @app.get("/finance/balance-sheet/{stock_code}")
 def get_balance_sheet(stock_code: str):
     url = "https://openapi.koreainvestment.com:9443/uapi/domestic-stock/v1/finance/balance-sheet"
     params = {"fid_cond_mrkt_div_code": "J", "fid_input_iscd": stock_code, "fid_div_cls_code": "1"}
     return fetch_api(url, "FHKST66430100", params=params)
 
-# 📌 5️⃣ 손익계산서 조회
+# 📌 손익계산서 조회
 @app.get("/finance/income-statement/{stock_code}")
 def get_income_statement(stock_code: str):
     url = "https://openapi.koreainvestment.com:9443/uapi/domestic-stock/v1/finance/income-statement"
     params = {"fid_cond_mrkt_div_code": "J", "fid_input_iscd": stock_code, "fid_div_cls_code": "1"}
     return fetch_api(url, "FHKST66430200", params=params)
 
-# 📌 6️⃣ 재무비율 조회
+# 📌 재무비율 조회
 @app.get("/finance/financial-ratio/{stock_code}")
 def get_financial_ratio(stock_code: str):
     url = "https://openapi.koreainvestment.com:9443/uapi/domestic-stock/v1/finance/financial-ratio"
     params = {"fid_cond_mrkt_div_code": "J", "fid_input_iscd": stock_code, "fid_div_cls_code": "1"}
     return fetch_api(url, "FHKST66430300", params=params)
 
-# 📌 7️⃣ 수익성비율 조회
+# 📌 수익성비율 조회
 @app.get("/finance/profit-ratio/{stock_code}")
 def get_profit_ratio(stock_code: str):
     url = "https://openapi.koreainvestment.com:9443/uapi/domestic-stock/v1/finance/profit-ratio"
     params = {"fid_cond_mrkt_div_code": "J", "fid_input_iscd": stock_code, "fid_div_cls_code": "1"}
     return fetch_api(url, "FHKST66430400", params=params)
 
-# 📌 8️⃣ 기타 주요비율 조회
+# 📌 기타 주요비율 조회
 @app.get("/finance/other-major-ratios/{stock_code}")
 def get_other_major_ratios(stock_code: str):
     url = "https://openapi.koreainvestment.com:9443/uapi/domestic-stock/v1/finance/other-major-ratios"
     params = {"fid_cond_mrkt_div_code": "J", "fid_input_iscd": stock_code, "fid_div_cls_code": "1"}
     return fetch_api(url, "FHKST66430500", params=params)
 
-# 📌 9️⃣ 안정성비율 조회
+# 📌 안정성비율 조회
 @app.get("/finance/stability-ratio/{stock_code}")
 def get_stability_ratio(stock_code: str):
     url = "https://openapi.koreainvestment.com:9443/uapi/domestic-stock/v1/finance/stability-ratio"
     params = {"fid_cond_mrkt_div_code": "J", "fid_input_iscd": stock_code, "fid_div_cls_code": "1"}
     return fetch_api(url, "FHKST66430600", params=params)
 
-# 📌 🔟 성장성비율 조회
+# 📌 성장성비율 조회
 @app.get("/finance/growth-ratio/{stock_code}")
 def get_growth_ratio(stock_code: str):
     url = "https://openapi.koreainvestment.com:9443/uapi/domestic-stock/v1/finance/growth-ratio"
     params = {"fid_cond_mrkt_div_code": "J", "fid_input_iscd": stock_code, "fid_div_cls_code": "1"}
     return fetch_api(url, "FHKST66430800", params=params)
 
+# 📌 해외 실시간 상세현재가
 @app.get("/overseas/price-detail")
 def get_overseas_price_detail(
-    # 문서상 Query Parameter
-    AUTH: str = "",       # 사용자권한정보(일반적으로 헤더로 쓰이지만 문서상 필수)
-    EXCD: str = "",       # 거래소코드 (NYS, NAS, AMS, TSE 등)
-    SYMB: str = "",       # 종목코드 (AAPL, TSLA 등)
+    AUTH: str = "",    # 문서상 Query Param, 실제론 필요 없을 수 있음
+    EXCD: str = "",    # 거래소코드 (예: NAS, NYS, AMS 등)
+    SYMB: str = "",    # 종목코드 (예: AAPL, TSLA 등)
 ):
     """
     해외 실시간상세현재가 조회
-    - AUTH: 사용자권한정보(문서상 필수), 보통 헤더에 토큰 쓰지만 문서엔 Query Param
-    - EXCD: 거래소코드 (예: NAS, NYS, AMS 등)
-    - SYMB: 종목코드 (예: AAPL, TSLA 등)
     """
-
     url = "https://openapi.koreainvestment.com:9443/uapi/overseas-price/v1/quotations/price-detail"
-
-    # 모든 Query Param을 딕셔너리로 구성
     params = {
         "AUTH": AUTH,
         "EXCD": EXCD,
         "SYMB": SYMB,
     }
-    
-    # 해외주식 현재가 상세 TR_ID: HHDFS76200200
     return fetch_api(url, "HHDFS76200200", params=params)
 
+# 📌 해외 뉴스 조회
 @app.get("/overseas/news")
 def get_overseas_news(
-    INFO_GB: str = "",       # 뉴스구분(전체=공백)
-    CLASS_CD: str = "",      # 중분류(전체=공백)
-    NATION_CD: str = "",     # 국가코드(전체=공백, CN, HK, US 등)
-    EXCHANGE_CD: str = "",   # 거래소코드(전체=공백)
-    SYMB: str = "",          # 종목코드(전체=공백)
-    DATA_DT: str = "",       # 조회일자(YYYYMMDD), 전체=공백
-    DATA_TM: str = "",       # 조회시간(HHMMSS), 전체=공백
-    CTS: str = "",           # 다음키(연속조회), 전체=공백
+    INFO_GB: str = "",
+    CLASS_CD: str = "",
+    NATION_CD: str = "",
+    EXCHANGE_CD: str = "",
+    SYMB: str = "",
+    DATA_DT: str = "",
+    DATA_TM: str = "",
+    CTS: str = ""
 ):
     """
     해외뉴스종합(제목) 조회
-    - INFO_GB: 뉴스구분 (전체=공백)
-    - CLASS_CD: 중분류 (전체=공백)
-    - NATION_CD: 국가코드 (CN, HK, US 등)
-    - EXCHANGE_CD: 거래소코드
-    - SYMB: 종목코드
-    - DATA_DT: 조회일자(YYYYMMDD)
-    - DATA_TM: 조회시간(HHMMSS)
-    - CTS: 다음키(연속조회)
     """
-
     url = "https://openapi.koreainvestment.com:9443/uapi/overseas-price/v1/quotations/news-title"
-
     params = {
         "INFO_GB": INFO_GB,
         "CLASS_CD": CLASS_CD,
@@ -211,6 +215,5 @@ def get_overseas_news(
         "DATA_TM": DATA_TM,
         "CTS": CTS
     }
-    
-    # 해외뉴스종합(제목) TR_ID: HHPSTH60100C1
     return fetch_api(url, "HHPSTH60100C1", params=params)
+
